@@ -1,467 +1,1037 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Leaf, Map, Compass, Flower2, Archive, BookOpen, Users, ArrowRight, 
-  RefreshCcw, Sparkles, Info, Clock, Trash2, Download, DoorOpen, 
-  Footprints, Lightbulb, Sprout, ChevronRight, ChevronLeft, ShieldCheck, 
-  FileText, CheckCircle2, Quote, ExternalLink, Heart, Layout
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  Check,
+  ChevronDown,
+  CircleUserRound,
+  Clapperboard,
+  Compass,
+  Filter,
+  Heart,
+  Menu,
+  MessageCircle,
+  Play,
+  Search,
+  Sparkles,
+  Star,
+  X,
 } from 'lucide-react';
+import { movieCatalog } from './movieCatalog';
+import { doubanMovieInfo } from './doubanMovieInfo';
 
-// --- 配置与常量 ---
-const STORAGE_KEY = 'talent_courtyard_final_data_v4';
-
-// --- 模拟生成算法 ---
-const generateInsightReport = (reflection) => {
-  const values = Object.values(reflection);
-  const totalLength = values.join('').length;
-  if (totalLength < 10) return null;
-
-  // 模拟逻辑：基于输入关键词的概率映射
-  return {
-    naturalAttention: "你似乎拥有一种‘透视’事物的本能，能够轻易捕捉到嘈杂信息背后的核心结构。这种注意力不是训练出来的，而是你生命自带的频率。",
-    energySource: "当你处于‘深度解决’或‘真诚连接’的时刻，你的生命能量会从低频转为高频。那种忘记时间的沉浸感，是你天赋发出的信号。",
-    repeatedRole: "在人群中，你可能不自觉地承担起‘定心丸’或‘翻译官’的角色。你擅长把模糊的情绪转化为清晰的认知。",
-    deepConcern: "你对‘真相是否被扭曲’或‘人是否被误解’有着近乎神圣的关切。这不仅是性格，更是你灵魂守护的疆域。",
-    suitableSoil: "你可能更适合那种‘慢节奏、深思考、高信任’的土壤。在过于喧嚣或功利的环境中，你的内在老师会选择闭口不言。",
-    drainingEnvironment: "警惕那些需要你长期‘表演’或‘仅做执行’的场域。它们会像干涸的河床一样，慢慢耗尽你的天赋水分。",
-    initialClue: "目前显现的线索指向：你可能是一位极具深度的‘生命翻译者’，擅长在复杂中寻找清明。",
-    openQuestions: ["哪一段文字最让你感到身体放松？", "如果天赋是一个人，ta现在想对你说什么？", "你还在害怕被谁看见？"]
-  };
+const themeTranslations = {
+  Abandonment: '被遗弃感',
+  Acceptance: '接纳',
+  Addiction: '成瘾',
+  Anger: '愤怒',
+  Assignment: '任务',
+  Attentiveness: '专注聆听',
+  'Authority Problem': '权威议题',
+  Awakening: '觉醒',
+  'Awareness of Dreaming': '梦境觉察',
+  Collaboration: '合作',
+  Communication: '沟通',
+  Community: '团体',
+  Compromise: '妥协',
+  'Dare to Take Step': '敢于迈步',
+  Death: '死亡',
+  Deception: '欺骗',
+  Defenselessness: '无防御',
+  Denial: '否认',
+  Depression: '抑郁',
+  Devotion: '奉献',
+  Discernment: '辨识',
+  'Discover True Identity': '发现真实身份',
+  'Divine providence': '神圣安排',
+  Doubt: '怀疑',
+  'Dropping the Mask': '放下面具',
+  'Face of innocence': '纯真面容',
+  Faith: '信心',
+  'False Perception': '错误知见',
+  'False/True Empathy': '真假同理',
+  Fame: '名声',
+  Family: '家庭',
+  Fear: '恐惧',
+  'Fear of Sacrifice': '害怕牺牲',
+  'Fear of commitment': '承诺恐惧',
+  Following: '跟随',
+  Forgiveness: '宽恕',
+  'Free Will': '自由意志',
+  Grievances: '怨恨',
+  Guidance: '指引',
+  Guilt: '愧疚',
+  Happiness: '幸福',
+  'Heal Past Associations': '疗愈过去联结',
+  Healing: '疗愈',
+  'Holy relationship': '神圣关系',
+  Injustice: '不公',
+  Innocence: '纯真',
+  Inspiration: '灵感',
+  Intellectualization: '理智化',
+  Jealousy: '嫉妒',
+  Joy: '喜悦',
+  Judgment: '评判',
+  'Letting Go of Control': '放下控制',
+  'Letting go of form': '放下形式',
+  'Letting go of specialness': '放下特殊性',
+  Loneliness: '孤独',
+  Love: '爱',
+  'MIND TRAINING': '心智训练',
+  Magic: '魔法思维',
+  Marriage: '婚姻',
+  'Mighty companions': '同行伙伴',
+  'Mind Training': '心智训练',
+  Miracles: '奇迹',
+  Money: '金钱',
+  'No Competition': '无竞争',
+  'No Compromise': '不妥协',
+  'No People Pleasing': '不取悦',
+  'No Private Thoughts': '无私密念头',
+  'No Ripping of Symbols': '不撕裂象征',
+  'Opening up to love': '向爱敞开',
+  'Pain and Pleasure': '痛苦与快乐',
+  'People Pleasing': '取悦他人',
+  Perfectionism: '完美主义',
+  'Power of Thought': '念头的力量',
+  Prayer: '祈祷',
+  'Present Moment': '当下',
+  Pride: '骄傲',
+  Projection: '投射',
+  Protectionism: '自我保护',
+  'Psychic Abilities': '通灵能力',
+  Purpose: '目的',
+  'Quantum Physics': '量子物理',
+  'Real Sight': '真实看见',
+  Repression: '压抑',
+  Sarcasm: '讽刺',
+  Secrets: '秘密',
+  Sex: '性',
+  Shame: '羞耻',
+  Sickness: '疾病',
+  'Signs and Symbols': '征兆与象征',
+  'Split mind': '分裂心智',
+  Stress: '压力',
+  Superiority: '优越感',
+  'Teacher/Student': '师生关系',
+  Temptation: '诱惑',
+  'The Script is Written': '剧本已写好',
+  Time: '时间',
+  'Transcending Roles': '超越角色',
+  Trust: '信任',
+  'Unhealed Healer': '未疗愈的疗愈者',
+  Unworthiness: '不配得感',
+  'Vibrational connection': '振动连接',
+  Victimization: '受害者心态',
+  Vigilance: '警醒',
+  'Wake-Up Call': '唤醒信号',
+  Willingness: '愿心',
+  Workaholism: '工作狂',
+  Worthiness: '配得感',
 };
 
-const generateHypothesis = (insight) => {
-  if (!insight) return null;
-  return {
-    lifeTheme: "在复杂与模糊中，看见结构，并帮助人重新找到方向。",
-    clues: [
-      { title: "整理复杂的能力", description: "自然地将零散信息结构化。", evidence: "来自你高能时刻的描述。", verify: "验证：长期做这件事，你是感到更轻盈还是更沉重？" },
-      { title: "深度倾听的倾向", description: "愿意陪别人慢慢说清楚，而不是急着给建议。", evidence: "来自你对他人的自然回应。", verify: "验证：这种倾听是否让你也感到被滋养？" }
-    ],
-    possibleExpressions: ["深度咨询", "内容策展", "生命教育", "组织共创工作坊", "独立写作"],
-    livingQuestions: ["我是否一直在低估自己最自然的那部分贡献？", "那个让我羡慕的人，到底活出了我内心的哪一部分？"],
-    gentleSummary: "天赋不是一个终点，而是一段活出来的旅程。请带着这些假设，像孩子一样去生活。"
-  };
+const translateTheme = (theme) => themeTranslations[theme] || theme;
+
+const doubanInfoById = new Map(doubanMovieInfo.map((movie) => [movie.id, movie]));
+
+const normalizeMovieTitle = (title) =>
+  title.replace(/^(.+),\s*(The|A|An)$/i, '$2 $1');
+
+const knownChineseTitles = {
+  '12 Date of Christmas': '十二个圣诞约会',
+  '2:22': '2:22',
+  '20 Feet from Stardom': '离巨星二十英尺',
+  '42': '42号传奇',
+  '50 First Dates': '初恋50次',
+  'A Beautiful Mind': '美丽心灵',
+  'A Little Bit of Heaven': '天堂一角',
+  'A Man Called Ove': '一个叫欧维的男人决定去死',
+  'About a Boy': '单亲插班生',
+  'About Time': '时空恋旅人',
+  'After Earth': '重返地球',
+  'AI Artificial Intelligence': '人工智能',
+  'American Beauty': '美国丽人',
+  'Anger Management': '愤怒管理',
+  'Apollo 13': '阿波罗13号',
+  Arrival: '降临',
+  'As Good as It Gets': '尽善尽美',
+  'August Rush': '八月迷情',
+  Awakenings: '无语问苍天',
+  'Batman Begins': '蝙蝠侠：侠影之谜',
+  Bedazzled: '神鬼愿望',
+  'Before I Fall': '忽然七日',
+  'Being There': '富贵逼人来',
+  'Black Swan': '黑天鹅',
+  'Blind Side, The': '弱点',
+  Bliss: '极乐',
+  Braveheart: '勇敢的心',
+  'Bruce Almighty': '冒牌天神',
+  'Cast Away': '荒岛余生',
+  Chocolat: '浓情巧克力',
+  Click: '人生遥控器',
+  'Cloud Atlas': '云图',
+  Cocoon: '魔茧',
+  Contact: '超时空接触',
+  'Dark Knight, The': '蝙蝠侠：黑暗骑士',
+  'Dead Poets Society': '死亡诗社',
+  'Defending Your Life': '为自己辩护',
+  'Eat Pray Love': '美食、祈祷和恋爱',
+  'Eternal Sunshine of the Spotless Mind': '暖暖内含光',
+  'Field of Dreams': '梦幻之地',
+  'Forrest Gump': '阿甘正传',
+  'Free Guy': '失控玩家',
+  Gandhi: '甘地传',
+  'Good Will Hunting': '心灵捕手',
+  Gravity: '地心引力',
+  'Groundhog Day': '土拨鼠之日',
+  Her: '她',
+  'I Am Sam': '我是山姆',
+  Inception: '盗梦空间',
+  'Inside Out': '头脑特工队',
+  Interstellar: '星际穿越',
+  'It’s a Wonderful Life': '生活多美好',
+  'Life of Pi': '少年派的奇幻漂流',
+  'Little Miss Sunshine': '阳光小美女',
+  'Meet Joe Black': '第六感生死缘',
+  'Peaceful Warrior': '深夜加油站遇见苏格拉底',
+  Pleasantville: '欢乐谷',
+  'Saving Mr. Banks': '大梦想家',
+  'Shawshank Redemption, The': '肖申克的救赎',
+  'Silver Linings Playbook': '乌云背后的幸福线',
+  'Slumdog Millionaire': '贫民窟的百万富翁',
+  Soul: '心灵奇旅',
+  'The Adjustment Bureau': '命运规划局',
+  'The Green Mile': '绿里奇迹',
+  'The Matrix': '黑客帝国',
+  'The Truman Show': '楚门的世界',
+  'The Way': '朝圣之路',
+  'What Dreams May Come': '美梦成真',
+  Yesterday: '昨日奇迹',
 };
 
-// --- 子组件：进度小径 ---
-const LifeProgressPath = ({ currentStep }) => {
-  const steps = [
-    { id: 'L', label: '回听', icon: <DoorOpen size={16} /> },
-    { id: 'I', label: '辨认', icon: <Footprints size={16} /> },
-    { id: 'F', label: '假设', icon: <Lightbulb size={16} /> },
-    { id: 'E', label: '验证', icon: <Sprout size={16} /> }
+const getChineseTitle = (movie) => {
+  const doubanInfo = doubanInfoById.get(movie.id);
+  if (doubanInfo?.titleCn) {
+    return doubanInfo.titleCn;
+  }
+
+  const normalizedTitle = normalizeMovieTitle(movie.title);
+  if (knownChineseTitles[movie.title] || knownChineseTitles[normalizedTitle]) {
+    return knownChineseTitles[movie.title] || knownChineseTitles[normalizedTitle];
+  }
+
+  return normalizedTitle;
+};
+
+const getMovieIntro = (movie) => {
+  const themes = movie.themes.slice(0, 3).map(translateTheme).join('、') || '内在探索';
+  const doubanInfo = doubanInfoById.get(movie.id);
+  const doubanLead = doubanInfo?.doubanTitle
+    ? `豆瓣条目显示为《${doubanInfo.doubanTitle}》。`
+    : '';
+  return `${doubanLead}这部影片可作为观察「${themes}」的入口。观影时不急着评判角色，而是留意哪些情节让你紧张、羡慕、抗拒或放松。`;
+};
+
+const getMovieFocus = (movie) => {
+  const themes = movie.themes.slice(0, 5).map(translateTheme);
+  return [
+    `观察角色如何把内在信念投射到外在处境，并留意自己是否有相同模式。`,
+    `当影片触及${themes[0] || '某个主题'}时，暂停一下，感受身体最先出现的反应。`,
+    themes[1]
+      ? `把「${themes[1]}」当作今天的观影关键词，记录它在剧情中如何反复出现。`
+      : '记录一个最触动你的画面，并写下它让你想起的生活处境。',
   ];
-
-  return (
-    <div className="flex items-center gap-4 py-6 justify-center animate-fade-in">
-      {steps.map((step, idx) => (
-        <React.Fragment key={step.id}>
-          <div className={`flex flex-col items-center gap-2 transition-all duration-500 ${currentStep === step.id ? 'opacity-100 scale-110' : 'opacity-30'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${currentStep === step.id ? 'bg-[#7FA88B] text-white shadow-lg' : 'bg-[#DDD4C5] text-[#2F2F2A]'}`}>
-              {step.icon}
-            </div>
-            <span className="text-[10px] font-bold tracking-widest text-[#7A7468]">{step.label}</span>
-          </div>
-          {idx < steps.length - 1 && <div className="h-[1px] w-8 md:w-16 bg-[#DDD4C5] mb-6"></div>}
-        </React.Fragment>
-      ))}
-    </div>
-  );
 };
 
-// --- 主应用组件 ---
-export default function App() {
-  const [activeSection, setActiveSection] = useState('home');
-  const [isExploring, setIsExploring] = useState(false);
-  const [lifeStep, setLifeStep] = useState('L');
-  const [reflectionIndex, setReflectionIndex] = useState(0);
+const getPracticeSteps = (movie) => {
+  const primary = movie.themes[0] ? translateTheme(movie.themes[0]) : '当下经验';
+  const secondary = movie.themes[1] ? translateTheme(movie.themes[1]) : '关系中的反应';
 
-  // 数据状态
-  const [reflection, setReflection] = useState({
-    highEnergyMoment: '', childhoodClue: '', repeatedHelp: '', envyAndLonging: '', closedDoor: '', bodySignal: ''
-  });
-  const [insight, setInsight] = useState(null);
-  const [hypothesis, setHypothesis] = useState(null);
-  const [experiment, setExperiment] = useState({
-    clueToTest: '', action: '', successSignal: '', nextAdjustment: ''
-  });
-  const [archive, setArchive] = useState([]);
-  const [takeaway, setTakeaway] = useState('');
-
-  const reflectionConfigs = [
-    { key: 'highEnergyMoment', title: '高能时刻', sub: '回忆一个忘记时间、心里变亮的具体瞬间。', q: '有什么时候，你觉得自己特别“活着”？', ph: '那时我正在……我感到……因为……' },
-    { key: 'childhoodClue', title: '童年线索', sub: '在外界要求你“懂事”之前，你喜欢做什么？', q: '小时候，你自然会靠近什么？', ph: '小时候，我常常会……不需要任何人要求。' },
-    { key: 'repeatedHelp', title: '他人反馈', sub: '别人总是找你帮什么忙？那往往是你的自然天赋。', q: '别人通常因为什么事来找你？', ph: '他们似乎相信我可以……我对此感到……' },
-    { key: 'envyAndLonging', title: '羡慕与渴望', sub: '羡慕是灵魂的罗盘，指向你被压抑的潜能。', q: '你最近一次真心羡慕别人是因为什么？', ph: '我羡慕他/她能……如果我也可以，我会……' },
-    { key: 'closedDoor', title: '关闭之门', sub: '关闭可能是一种保护。', q: '有没有一条路，很想走却没走成？', ph: '曾经我以为我会……现在回看，我发现……' },
-    { key: 'bodySignal', title: '身体知觉', sub: '身体知道灵魂的真相。', q: '想到现在的方向，你的身体有什么反应？', ph: '当我想到这件事，我感到肩膀……呼吸……' },
+  return [
+    `观影前写下：我最近在哪件事上最需要看见「${primary}」？`,
+    `观影中标记三个身体有反应的片段，只记录感受，不分析对错。`,
+    `观影后完成一句话：我在角色身上看见了自己关于「${secondary}」的信念。`,
+    `选择一个小行动，在 24 小时内练习少一点防御、多一点诚实。`,
   ];
+};
 
-  // 数据持久化
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setArchive(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse archive data", e);
-      }
-    }
-  }, []);
+const enrichMovie = (movie) => ({
+  ...movie,
+  douban: doubanInfoById.get(movie.id) || null,
+  titleCn: getChineseTitle(movie),
+  intro: getMovieIntro(movie),
+  focus: getMovieFocus(movie),
+  practices: getPracticeSteps(movie),
+  hasVerifiedChineseTitle: Boolean(
+    doubanInfoById.get(movie.id)?.titleCn ||
+      knownChineseTitles[movie.title] ||
+      knownChineseTitles[normalizeMovieTitle(movie.title)],
+  ),
+});
 
-  const handleStart = () => {
-    setIsExploring(true);
-    setLifeStep('L');
-    setReflectionIndex(0);
-    // 使用 requestAnimationFrame 确保 DOM 渲染后再滚动
-    requestAnimationFrame(() => {
-      const anchor = document.getElementById('life-model-anchor');
-      if (anchor) anchor.scrollIntoView({ behavior: 'smooth' });
+const buildThemeGroups = (movies) => {
+  const counts = new Map();
+  movies.forEach((movie) => {
+    movie.themes.forEach((theme) => counts.set(theme, (counts.get(theme) || 0) + 1));
+  });
+
+  const popular = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 36)
+    .map(([name, count]) => ({ name, count }));
+
+  return [
+    {
+      title: '热门主题',
+      items: popular,
+    },
+    {
+      title: '卡点',
+      items: ['Projection', 'Judgment', 'People Pleasing', 'Guilt', 'Fear', 'Denial', 'Letting Go of Control', 'Victimization']
+        .filter((name) => counts.has(name))
+        .map((name) => ({ name, count: counts.get(name) || 0 })),
+    },
+    {
+      title: '心灵果实',
+      items: ['Forgiveness', 'Healing', 'Awakening', 'Joy', 'Love', 'Trust', 'Miracles', 'Defenselessness']
+        .filter((name) => counts.has(name))
+        .map((name) => ({ name, count: counts.get(name) || 0 })),
+    },
+    {
+      title: '关系',
+      items: ['Family', 'Marriage', 'Holy relationship', 'Communication', 'Community', 'Mighty companions', 'Fear of commitment', 'Opening up to love']
+        .filter((name) => counts.has(name))
+        .map((name) => ({ name, count: counts.get(name) || 0 })),
+    },
+  ];
+};
+
+const featuredMovies = [
+  {
+    title: '心灵奇旅',
+    year: '2020',
+    type: '动画 / 音乐',
+    level: '入门',
+    themes: ['临在', '真实身份', '执着', '喜悦'],
+    image:
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=900&q=80',
+    guide:
+      '当“人生目标”变成新的枷锁，灵魂会错过当下正在发生的简单喜悦。',
+    question: '如果不需要证明这一生有用，我今天会怎样更真实地活着？',
+  },
+  {
+    title: '楚门的世界',
+    year: '1998',
+    type: '剧情 / 寓言',
+    level: '进阶',
+    themes: ['觉醒', '控制', '恐惧', '真实身份'],
+    image:
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
+    guide:
+      '熟悉的世界不一定真实。看见剧本，是离开自动反应的第一步。',
+    question: '我最害怕走出哪个“被安排好的安全区”？',
+  },
+  {
+    title: '降临',
+    year: '2016',
+    type: '科幻 / 关系',
+    level: '深潜',
+    themes: ['沟通', '时间', '臣服', '悲伤'],
+    image:
+      'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=900&q=80',
+    guide:
+      '当线性时间松动，爱不再被结果定义，选择也不再只是防御。',
+    question: '若我已经知道会失去，我还愿意全然去爱吗？',
+  },
+  {
+    title: '海街日记',
+    year: '2015',
+    type: '家庭 / 日常',
+    level: '入门',
+    themes: ['家庭', '宽恕', '疗愈', '羞耻'],
+    image:
+      'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80',
+    guide:
+      '疗愈常常不是激烈的和解，而是在一餐一饭里重新允许彼此存在。',
+    question: '我是否仍在替上一代没有说出口的痛苦背负责任？',
+  },
+  {
+    title: '美丽心灵',
+    year: '2001',
+    type: '传记 / 剧情',
+    level: '进阶',
+    themes: ['投射', '信任', '关系', '无防御'],
+    image:
+      'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=900&q=80',
+    guide:
+      '头脑会制造看似完整的故事。温柔地辨认它，而不是与它作战。',
+    question: '我正在把哪个内在恐惧投射到他人身上？',
+  },
+  {
+    title: '少年派的奇幻漂流',
+    year: '2012',
+    type: '冒险 / 灵性',
+    level: '深潜',
+    themes: ['信任', '分离感', '奇迹', '恐惧'],
+    image:
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80',
+    guide:
+      '信仰不是解释苦难，而是在未知中选择不关闭心。',
+    question: '我讲述自己的故事时，选择了恐惧版本还是恩典版本？',
+  },
+  {
+    title: '她',
+    year: '2013',
+    type: '爱情 / 科幻',
+    level: '进阶',
+    themes: ['亲密关系', '孤独', '放下特殊性', '沟通'],
+    image:
+      'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=900&q=80',
+    guide:
+      '关系中的对象会变化，但真正被邀请看见的是自己的需要与依恋。',
+    question: '我爱的是眼前这个人，还是他满足我想象中的空缺？',
+  },
+  {
+    title: '千与千寻',
+    year: '2001',
+    type: '动画 / 成长',
+    level: '入门',
+    themes: ['勇气', '真实身份', '执着', '家庭'],
+    image:
+      'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=900&q=80',
+    guide:
+      '名字象征记忆与身份。被世界催眠时，记得自己是谁。',
+    question: '我为了适应环境，遗忘了自己的哪一个名字？',
+  },
+];
+
+const spotlights = [
+  '本周焦点：用《楚门的世界》观看“安全感”的幻象',
+  '周六线上观影会：电影、静默、分享与心智练习',
+  '新手路线：三部电影练习从情绪到信念的回看',
+];
+
+const PAGE_SIZE = 24;
+
+function App() {
+  const [activeTheme, setActiveTheme] = useState('全部');
+  const [query, setQuery] = useState('');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedMovie, setSelectedMovie] = useState(null);
+
+  const themeGroups = useMemo(() => buildThemeGroups(movieCatalog), []);
+  const enrichedMovies = useMemo(() => movieCatalog.map(enrichMovie), []);
+
+  const filteredMovies = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return enrichedMovies.filter((movie) => {
+      const matchesTheme =
+        activeTheme === '全部' || movie.themes.includes(activeTheme);
+      const matchesQuery =
+        !normalizedQuery ||
+        [
+          movie.title,
+          movie.titleCn,
+          movie.intro,
+          ...movie.themes,
+          ...movie.themes.map((theme) => translateTheme(theme)),
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedQuery);
+      return matchesTheme && matchesQuery;
     });
-  };
+  }, [activeTheme, enrichedMovies, query]);
 
-  const nextStep = () => {
-    if (lifeStep === 'L') {
-      if (reflectionIndex < reflectionConfigs.length - 1) {
-        setReflectionIndex(reflectionIndex + 1);
-      } else {
-        const report = generateInsightReport(reflection);
-        setInsight(report);
-        setLifeStep('I');
-      }
-    } else if (lifeStep === 'I') {
-      const hyp = generateHypothesis(insight);
-      setHypothesis(hyp);
-      setLifeStep('F');
-    } else if (lifeStep === 'F') {
-      setLifeStep('E');
-    }
-  };
-
-  const saveReport = () => {
-    const newReport = {
-      id: Date.now(),
-      date: new Date().toLocaleString(),
-      reflection,
-      insight,
-      hypothesis,
-      experiment,
-      takeaway
-    };
-    const updated = [newReport, ...archive];
-    setArchive(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    setIsExploring(false);
-    setActiveSection('archive');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const exportText = () => {
-    const text = `天赋小院 LIFE 生命线索报告\n时间：${new Date().toLocaleString()}\n\n[生命主题假设]\n${hypothesis?.lifeTheme || '无'}\n\n[天赋线索]\n${hypothesis?.clues ? hypothesis.clues.map(c => `- ${c.title}: ${c.description}`).join('\n') : '无'}\n\n[实验规划]\n线索：${experiment.clueToTest || '无'}\n行动：${experiment.action || '无'}\n\n[感悟]\n${takeaway || '无'}`;
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `天赋小院报告-${Date.now()}.txt`;
-    a.click();
-  };
-
-  // --- 导航 ---
-  const Nav = () => (
-    <nav className="fixed top-0 w-full z-50 bg-[#F7F2E8]/90 backdrop-blur-md border-b border-[#DDD4C5] px-6 py-4 flex justify-between items-center">
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setIsExploring(false); setActiveSection('home');}}>
-        <div className="w-8 h-8 bg-[#7FA88B] rounded-full flex items-center justify-center">
-          <Flower2 size={18} className="text-white" />
-        </div>
-        <div className="hidden sm:block">
-          <h1 className="font-serif text-lg font-bold tracking-widest text-[#2F2F2A]">天赋小院</h1>
-          <p className="text-[9px] text-[#7A7468] tracking-tighter uppercase">让生命发声</p>
-        </div>
-      </div>
-      <div className="flex gap-4 md:gap-8 text-sm text-[#7A7468]">
-        {['首页', '生命档案'].map((label, idx) => (
-          <button 
-            key={idx}
-            onClick={() => { setIsExploring(false); setActiveSection(['home', 'archive'][idx]); }}
-            className={`hover:text-[#2F2F2A] transition-colors ${!isExploring && activeSection === ['home', 'archive'][idx] ? 'text-[#2F2F2A] font-bold border-b border-[#C7A45D]' : ''}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-    </nav>
+  const totalPages = Math.max(1, Math.ceil(filteredMovies.length / PAGE_SIZE));
+  const pagedMovies = filteredMovies.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
   );
 
+  const selectedThemeLabel =
+    activeTheme === '全部' ? '全部' : `${translateTheme(activeTheme)} / ${activeTheme}`;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTheme, query]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   return (
-    <div className="min-h-screen bg-[#F7F2E8] text-[#2F2F2A] font-sans selection:bg-[#7FA88B]/20">
-      <Nav />
-      
-      <main className="pt-20">
-        {activeSection === 'home' && (
-          <div className="animate-fade-in">
-            {/* Hero Section */}
-            <section className="min-h-[80vh] flex flex-col items-center justify-center text-center px-6">
-              <div className="max-w-3xl space-y-8">
-                <h2 className="text-4xl md:text-6xl font-serif leading-tight text-[#2F2F2A]">
-                  天赋，不是测出来的。<br />
-                  是在生命里，被慢慢听见的。
-                </h2>
-                <p className="text-lg text-[#7A7468] font-light max-w-2xl mx-auto leading-relaxed">
-                  欢迎来到天赋小院。这里不算命，不贴标签，不急着给答案。<br/>
-                  我们陪你回看真实经历，辨认生命线索，听见内在的召唤。
-                </p>
-                <button onClick={handleStart} className="px-12 py-5 bg-[#7FA88B] text-white rounded-full hover:bg-[#5F8A72] shadow-xl flex items-center gap-3 mx-auto transition-all text-lg font-serif">
-                  开启 LIFE 探索路径 <ArrowRight size={20} />
-                </button>
-              </div>
-            </section>
+    <div className="min-h-screen bg-[#f5f0e8] text-[#1f2723]">
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/20 bg-[#17231f]/88 text-white backdrop-blur-xl">
+        <nav className="mx-auto flex h-18 max-w-7xl items-center justify-between px-5 sm:px-8">
+          <a href="#top" className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded bg-[#d6a647] text-[#17231f]">
+              <Clapperboard size={22} />
+            </span>
+            <span>
+              <span className="block font-serif text-lg font-semibold tracking-wide">
+                光影内观
+              </span>
+              <span className="block text-[11px] tracking-[0.24em] text-white/55">
+                MOVIES FOR AWAKENING
+              </span>
+            </span>
+          </a>
 
-            {/* LIFE Model Anchor */}
-            <div id="life-model-anchor" className="h-4"/>
+          <div className="hidden items-center gap-8 text-sm font-medium text-white/75 md:flex">
+            <a className="hover:text-white" href="#movies">
+              电影库
+            </a>
+            <a className="hover:text-white" href="#dive-in">
+              深入练习
+            </a>
+            <a className="hover:text-white" href="#spotlight">
+              焦点
+            </a>
+            <a className="hover:text-white" href="#join">
+              加入
+            </a>
+          </div>
 
-            {/* Interaction Section */}
-            {isExploring && (
-              <section className="py-20 px-6 bg-white/40 border-y border-[#DDD4C5]/30">
-                <div className="max-w-4xl mx-auto space-y-12">
-                  <LifeProgressPath currentStep={lifeStep} />
-
-                  {/* L Phase: Walking */}
-                  {lifeStep === 'L' && (
-                    <div className="animate-fade-in space-y-8">
-                      <div className="bg-white p-10 md:p-14 rounded-[50px] border border-[#DDD4C5] shadow-sm space-y-8 relative">
-                        <div className="flex justify-between items-center text-[10px] text-[#C7A45D] font-bold tracking-[0.2em]">
-                          <span>{reflectionConfigs[reflectionIndex].title}</span>
-                          <span>{reflectionIndex + 1} / {reflectionConfigs.length}</span>
-                        </div>
-                        <h4 className="text-2xl font-serif leading-relaxed text-[#2F2F2A]">
-                          {reflectionConfigs[reflectionIndex].q}
-                        </h4>
-                        <p className="text-sm text-[#7A7468] font-light italic">{reflectionConfigs[reflectionIndex].sub}</p>
-                        <textarea 
-                          key={reflectionIndex}
-                          value={reflection[reflectionConfigs[reflectionIndex].key]}
-                          onChange={(e) => setReflection({...reflection, [reflectionConfigs[reflectionIndex].key]: e.target.value})}
-                          className="w-full h-44 p-6 bg-[#F7F2E8]/40 border-none rounded-3xl outline-none focus:ring-2 focus:ring-[#7FA88B]/20 transition-all resize-none text-base"
-                          placeholder={reflectionConfigs[reflectionIndex].ph}
-                        />
-                        <div className="flex justify-between items-center gap-4 pt-4">
-                          <button 
-                            disabled={reflectionIndex === 0}
-                            onClick={() => setReflectionIndex(reflectionIndex - 1)}
-                            className="p-4 rounded-full border border-[#DDD4C5] text-[#7A7468] disabled:opacity-10 hover:bg-[#F7F2E8] transition-all"
-                          >
-                            <ChevronLeft size={20} />
-                          </button>
-                          <div className="flex-1 h-[2px] bg-[#F7F2E8] rounded-full overflow-hidden">
-                            <div className="h-full bg-[#7FA88B] transition-all duration-700" style={{ width: `${((reflectionIndex + 1) / reflectionConfigs.length) * 100}%` }} />
-                          </div>
-                          <button onClick={nextStep} className="px-10 py-4 bg-[#7FA88B] text-white rounded-full flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
-                            {reflectionIndex === reflectionConfigs.length - 1 ? '整理线索' : '下一步'} <ChevronRight size={18} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* I Phase: Insights */}
-                  {lifeStep === 'I' && (
-                    <div className="animate-fade-in space-y-12">
-                      <div className="text-center space-y-3">
-                        <h3 className="text-2xl font-serif">I｜线索正在浮现</h3>
-                        <p className="text-sm text-[#7A7468]">系统不给你定论，只整理出你生命中反复出现的共鸣。</p>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {insight && Object.entries(insight).filter(([k]) => k !== 'openQuestions').map(([key, val]) => (
-                          <div key={key} className="p-10 bg-white border border-[#DDD4C5] rounded-[40px] space-y-4 hover:shadow-md transition-all">
-                            <span className="text-[10px] font-bold text-[#C7A45D] uppercase tracking-widest">
-                              {key === 'naturalAttention' ? '自然注意力' : key === 'energySource' ? '能量来源' : '生命观察'}
-                            </span>
-                            <p className="text-sm leading-relaxed text-[#2F2F2A] font-light">{String(val)}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex justify-center gap-6 pt-8">
-                        <button onClick={() => setLifeStep('L')} className="px-8 py-3 border border-[#7A7468] rounded-full text-sm">返回修改</button>
-                        <button onClick={nextStep} className="px-10 py-4 bg-[#7FA88B] text-white rounded-full shadow-lg">形成生命假设</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* F Phase: Hypothesis */}
-                  {lifeStep === 'F' && hypothesis && (
-                    <div className="animate-fade-in space-y-12">
-                      <div className="p-12 md:p-16 bg-white rounded-[60px] border-2 border-[#C7A45D]/20 space-y-12 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#F7F2E8] rounded-full -mr-16 -mt-16 opacity-50" />
-                        <div className="space-y-4">
-                          <span className="text-xs font-bold text-[#C7A45D] tracking-[0.3em] uppercase">核心生命主题假设</span>
-                          <h4 className="text-3xl font-serif text-[#2F2F2A] leading-relaxed border-l-8 border-[#C7A45D] pl-8 italic">
-                            “{hypothesis.lifeTheme}”
-                          </h4>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 border-t border-[#F7F2E8] pt-10">
-                          <div className="space-y-5">
-                            <h5 className="text-sm font-bold text-[#7FA88B] tracking-widest">可能表达方式</h5>
-                            <ul className="space-y-3 text-sm text-[#7A7468]">
-                              {hypothesis.possibleExpressions.map((e, i) => (
-                                <li key={i} className="flex items-center gap-3"><CheckCircle2 size={14} className="text-[#7FA88B] opacity-50"/>{e}</li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="space-y-5">
-                            <h5 className="text-sm font-bold text-[#B96A5B] tracking-widest">待验证的问题</h5>
-                            <ul className="space-y-3 text-sm italic text-[#7A7468]">
-                              {hypothesis.livingQuestions.map((q, i) => <li key={i}>· {q}</li>)}
-                            </ul>
-                          </div>
-                        </div>
-                        <p className="text-center text-sm font-serif italic text-[#7A7468] pt-10 border-t border-[#F7F2E8]/50">
-                          {hypothesis.gentleSummary}
-                        </p>
-                      </div>
-                      <div className="flex justify-center pt-8">
-                        <button onClick={nextStep} className="px-14 py-5 bg-[#7FA88B] text-white rounded-full shadow-2xl text-lg font-serif">设计小步实验</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* E Phase: Experiment */}
-                  {lifeStep === 'E' && (
-                    <div className="animate-fade-in space-y-12">
-                      <div className="text-center space-y-3">
-                        <h3 className="text-2xl font-serif">E｜小步验证</h3>
-                        <p className="text-sm text-[#7A7468]">一个真实的呼召，不怕被生活轻轻验证。</p>
-                      </div>
-                      <div className="bg-white p-12 rounded-[50px] border border-[#DDD4C5] space-y-10 shadow-sm">
-                        <div className="space-y-6">
-                          <div className="space-y-3">
-                            <label className="text-xs font-bold text-[#7A7468] uppercase tracking-widest">我要验证的线索</label>
-                            <input value={experiment.clueToTest} onChange={(e) => setExperiment({...experiment, clueToTest: e.target.value})} className="w-full p-4 bg-[#F7F2E8] rounded-2xl border-none outline-none text-sm" placeholder="例如：我可能擅长在复杂中寻找清明。" />
-                          </div>
-                          <div className="space-y-3">
-                            <label className="text-xs font-bold text-[#7A7468] uppercase tracking-widest">实验行动清单</label>
-                            <textarea value={experiment.action} onChange={(e) => setExperiment({...experiment, action: e.target.value})} className="w-full h-32 p-4 bg-[#F7F2E8] rounded-2xl border-none outline-none text-sm resize-none" placeholder="例如：下周三找一位朋友进行40分钟深度倾听。" />
-                          </div>
-                        </div>
-                        <div className="pt-8 border-t border-[#F7F2E8] space-y-4">
-                          <label className="text-sm font-bold text-[#2F2F2A] font-serif">此刻，我想对自己说：</label>
-                          <input value={takeaway} onChange={(e) => setTakeaway(e.target.value)} className="w-full p-4 border-b border-[#DDD4C5] text-2xl italic outline-none font-serif text-[#7FA88B] bg-transparent" placeholder="保持诚实，慢慢走……" />
-                        </div>
-                      </div>
-                      <div className="flex justify-center gap-6 pt-8">
-                        <button onClick={saveReport} className="px-14 py-5 bg-[#7FA88B] text-white rounded-full shadow-2xl text-xl font-serif">存入档案，完成探索</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {/* Philosophy Cards */}
-            <section className="py-24 px-6 max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { t: "不修复，只倾听", c: "在小院里，我们不急着修理任何人，只是为灵魂创造一个安全的停机坪。", icon: <Users size={24}/> },
-                { t: "借由第三物", c: "有些真话不能直说。借由诗歌、图画、故事，我们慢慢靠近那个害羞的自我。", icon: <BookOpen size={24}/> },
-                { t: "独自相聚", c: "我们坐成一个圈。各自独处，却又互相支持，在宁静中辨识内在的声音。", icon: <Heart size={24}/> }
-              ].map((item, idx) => (
-                <div key={idx} className="p-10 bg-white border border-[#DDD4C5] rounded-[40px] space-y-4 hover:shadow-lg transition-all">
-                  <div className="w-12 h-12 bg-[#EFE4D0] rounded-full flex items-center justify-center text-[#C7A45D] mb-4">{item.icon}</div>
-                  <h4 className="font-serif font-bold text-lg">{item.t}</h4>
-                  <p className="text-sm text-[#7A7468] leading-relaxed font-light">{item.c}</p>
-                </div>
-              ))}
-            </section>
+          <button
+            className="flex h-10 w-10 items-center justify-center rounded border border-white/20 md:hidden"
+            onClick={() => setMobileOpen((value) => !value)}
+            aria-label="打开菜单"
+          >
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </nav>
+        {mobileOpen && (
+          <div className="border-t border-white/10 bg-[#17231f] px-5 py-4 md:hidden">
+            {['电影库', '深入练习', '焦点', '加入'].map((item, index) => (
+              <a
+                key={item}
+                className="block py-3 text-sm text-white/80"
+                href={['#movies', '#dive-in', '#spotlight', '#join'][index]}
+                onClick={() => setMobileOpen(false)}
+              >
+                {item}
+              </a>
+            ))}
           </div>
         )}
+      </header>
 
-        {activeSection === 'archive' && (
-          <section className="min-h-screen py-24 px-6 max-w-4xl mx-auto animate-fade-in">
-            <div className="flex justify-between items-end border-b border-[#DDD4C5] pb-8 mb-12">
-              <div className="space-y-2">
-                <h3 className="text-3xl font-serif">生命档案</h3>
-                <p className="text-sm text-[#7A7468]">这是你生命曾经发出的声音，请珍藏它们。</p>
+      <main id="top">
+        <section className="relative min-h-[92vh] overflow-hidden">
+          <img
+            className="absolute inset-0 h-full w-full object-cover"
+            src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=2200&q=80"
+            alt="电影院座椅与银幕"
+          />
+          <div className="absolute inset-0 bg-[#101916]/70" />
+          <div className="relative mx-auto flex min-h-[92vh] max-w-7xl flex-col justify-end px-5 pb-16 pt-32 sm:px-8 lg:pb-24">
+            <div className="max-w-4xl">
+              <div className="mb-7 inline-flex items-center gap-2 border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold tracking-[0.24em] text-[#f0c86a] backdrop-blur">
+                中文电影觉察资料库
               </div>
-              <div className="flex gap-4">
-                <button onClick={exportText} className="text-xs text-[#7FA88B] flex items-center gap-2 hover:bg-[#7FA88B]/10 p-2 rounded-lg transition-all"><Download size={14}/> 导出报告</button>
-                <button onClick={() => {if(window.confirm('清空所有记录？')) {setArchive([]); localStorage.removeItem(STORAGE_KEY);}}} className="text-xs text-[#B96A5B] flex items-center gap-2 hover:bg-red-50 p-2 rounded-lg transition-all"><Trash2 size={14}/> 清空档案</button>
+              <h1 className="font-serif text-5xl font-semibold leading-[1.08] text-white sm:text-6xl lg:text-7xl">
+                借由观影，
+                <span className="block">看见内在正在发生什么</span>
+              </h1>
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-white/78">
+                这里为华人观众整理电影、主题与观影提问。你可以按情绪、关系、卡点或心灵果实筛选影片，把每一次观影变成一次温柔而诚实的自我回看。
+              </p>
+              <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+                <a
+                  href="#movies"
+                  className="inline-flex items-center justify-center gap-3 bg-[#d6a647] px-6 py-4 text-sm font-bold text-[#17231f] transition hover:bg-[#efc35d]"
+                >
+                  浏览电影库 <ArrowRight size={18} />
+                </a>
+                <a
+                  href="#dive-in"
+                  className="inline-flex items-center justify-center gap-3 border border-white/30 px-6 py-4 text-sm font-bold text-white transition hover:bg-white/10"
+                >
+                  如何观影练习 <Play size={18} />
+                </a>
               </div>
             </div>
 
-            {archive.length === 0 ? (
-              <div className="py-32 text-center opacity-30 flex flex-col items-center gap-4">
-                <Archive size={64}/>
-                <p className="font-serif text-xl tracking-widest uppercase">暂无探索足迹</p>
-                <button onClick={() => setActiveSection('home')} className="text-sm text-[#7FA88B] border-b border-[#7FA88B]">回首页开启旅程</button>
+            <div className="mt-14 grid max-w-5xl grid-cols-1 border border-white/15 bg-[#17231f]/72 backdrop-blur md:grid-cols-3">
+              {spotlights.map((item, index) => (
+                <a
+                  key={item}
+                  href="#spotlight"
+                  className="group flex min-h-24 items-center justify-between gap-5 border-b border-white/12 px-5 py-5 text-sm text-white/76 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0"
+                >
+                  <span>
+                    <span className="mb-2 block text-[11px] font-bold tracking-[0.18em] text-[#d6a647]">
+                      0{index + 1}
+                    </span>
+                    {item}
+                  </span>
+                  <ChevronDown className="-rotate-90 opacity-40 group-hover:opacity-100" size={18} />
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="movies" className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:py-20">
+          <div className="grid gap-10 lg:grid-cols-[300px_minmax(0,1fr)]">
+            <aside className="lg:sticky lg:top-24 lg:self-start">
+              <div className="border border-[#d9cbbb] bg-[#fffaf2] p-5 shadow-sm">
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="font-serif text-2xl font-semibold">主题</h2>
+                  <Filter className="text-[#9b6d22]" size={20} />
+                </div>
+
+                <button
+                  className={`mb-5 flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold ${
+                    activeTheme === '全部'
+                      ? 'bg-[#17231f] text-white'
+                      : 'bg-[#efe4d6] text-[#1f2723]'
+                  }`}
+                  onClick={() => setActiveTheme('全部')}
+                >
+                  全部影片 <span>{movieCatalog.length}</span>
+                </button>
+
+                <div className="space-y-6">
+                  {themeGroups.map((group) => (
+                    <div key={group.title}>
+                      <h3 className="mb-3 text-xs font-bold tracking-[0.2em] text-[#8a7a66]">
+                        {group.title}
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {group.items.map((theme) => (
+                          <button
+                            key={`${group.title}-${theme.name}`}
+                            onClick={() => setActiveTheme(theme.name)}
+                            className={`px-3 py-2 text-xs transition ${
+                              activeTheme === theme.name
+                                ? 'bg-[#d6a647] font-bold text-[#17231f]'
+                                : 'bg-white text-[#5f5548] hover:bg-[#efe4d6]'
+                            }`}
+                          >
+                            {translateTheme(theme.name)}
+                            <span className="ml-1 text-[10px] opacity-60">
+                              {theme.count}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-8">
-                {archive.map((entry, idx) => (
-                  <div key={idx} className="p-12 bg-white border border-[#DDD4C5] rounded-[50px] space-y-8 group hover:shadow-2xl transition-all relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-all">
-                      <ExternalLink size={20} className="text-[#C7A45D] cursor-pointer" />
+            </aside>
+
+            <div>
+              <div className="mb-8 flex flex-col gap-5 border-b border-[#d9cbbb] pb-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="mb-2 text-xs font-bold tracking-[0.24em] text-[#9b6d22]">
+                    MOVIE ARCHIVE
+                  </p>
+                  <h2 className="font-serif text-4xl font-semibold">电影库</h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-[#665d52]">
+                    当前电影库共收录 {movieCatalog.length} 部。当前筛选：
+                    {selectedThemeLabel}，显示 {filteredMovies.length} 部。当前第 {currentPage} / {totalPages} 页。
+                  </p>
+                </div>
+
+                <label className="flex h-12 min-w-0 items-center gap-3 border border-[#d9cbbb] bg-white px-4 lg:w-80">
+                  <Search className="shrink-0 text-[#9b6d22]" size={18} />
+                  <input
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="搜索电影或主题"
+                  />
+                </label>
+              </div>
+
+              <div className="mb-8 grid grid-cols-1 gap-4 xl:grid-cols-2">
+                {featuredMovies.slice(0, 4).map((movie) => (
+                  <article
+                    key={movie.title}
+                    className="grid overflow-hidden border border-[#d9cbbb] bg-[#fffaf2] shadow-sm sm:grid-cols-[170px_minmax(0,1fr)]"
+                  >
+                    <img
+                      className="h-40 w-full object-cover sm:h-full"
+                      src={movie.image}
+                      alt={`${movie.title} 观影意象`}
+                    />
+                    <div className="p-5">
+                      <p className="text-xs font-bold tracking-[0.18em] text-[#9b6d22]">
+                        精选引导 · {movie.level}
+                      </p>
+                      <h3 className="mt-2 font-serif text-2xl font-semibold">
+                        {movie.title}
+                      </h3>
+                      <p className="mt-3 text-sm leading-6 text-[#5f5548]">{movie.guide}</p>
                     </div>
-                    <div className="flex justify-between items-center text-[10px] font-bold text-[#C7A45D] tracking-widest uppercase border-b border-[#F7F2E8] pb-4">
-                      <span>{entry.date}</span>
-                      <span className="flex items-center gap-2"><Quote size={12}/> 探索记录</span>
+                  </article>
+                ))}
+              </div>
+
+              <div className="overflow-hidden border border-[#d9cbbb] bg-[#fffaf2]">
+                {pagedMovies.map((movie) => (
+                  <article
+                    key={movie.id}
+                    className="grid gap-4 border-b border-[#eadfD1] p-5 last:border-b-0 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] xl:items-center"
+                  >
+                    <div>
+                      <p className="text-[11px] font-bold tracking-[0.18em] text-[#9b6d22]">
+                        编号 #{movie.id}
+                      </p>
+                      <h3 className="mt-1 font-serif text-xl font-semibold leading-tight">
+                        {movie.titleCn}
+                      </h3>
+                      <p className="mt-1 text-xs text-[#8a7a66]">
+                        {movie.title}
+                        {!movie.hasVerifiedChineseTitle && ' · 中文名待校对'}
+                      </p>
                     </div>
-                    <div className="space-y-4">
-                      <h4 className="text-2xl font-serif italic text-[#2F2F2A] border-l-8 border-[#7FA88B] pl-6 leading-relaxed">
-                        “{entry.hypothesis?.lifeTheme || '正在显露的生命主题'}”
-                      </h4>
-                      <p className="text-base text-[#7FA88B] font-serif italic pt-4">—— {entry.takeaway || '未留下感言'}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {movie.themes.map((theme) => (
+                        <button
+                          key={`${movie.id}-${theme}`}
+                          onClick={() => setActiveTheme(theme)}
+                          className="bg-[#efe4d6] px-2.5 py-1.5 text-xs text-[#5f5548] hover:bg-[#d6a647] hover:text-[#17231f]"
+                        >
+                          {translateTheme(theme)}
+                        </button>
+                      ))}
                     </div>
-                    <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-8 text-sm font-light">
-                      <div className="space-y-2">
-                        <p className="font-bold text-[#7A7468] uppercase text-[10px]">实验行动</p>
-                        <p className="line-clamp-2">{entry.experiment?.action || '暂无行动规划'}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="font-bold text-[#7A7468] uppercase text-[10px]">线索摘要</p>
-                        <p className="line-clamp-2">{entry.insight?.initialClue || '正在整理线索...'}</p>
-                      </div>
+                    <p className="text-sm leading-6 text-[#5f5548]">
+                      {movie.intro}
+                    </p>
+                    <div className="flex flex-wrap gap-2 xl:justify-end">
+                      <button
+                        className="inline-flex items-center justify-center gap-2 bg-[#17231f] px-4 py-2 text-xs font-bold text-white hover:bg-[#263a34]"
+                        onClick={() => setSelectedMovie(movie)}
+                      >
+                        查看详情 <ArrowRight size={14} />
+                      </button>
                     </div>
+                  </article>
+                ))}
+              </div>
+
+              {filteredMovies.length > 0 && (
+                <div className="mt-6 flex flex-col gap-4 border border-[#d9cbbb] bg-[#fffaf2] p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-[#665d52]">
+                    第 {(currentPage - 1) * PAGE_SIZE + 1}-
+                    {Math.min(currentPage * PAGE_SIZE, filteredMovies.length)} 部，共 {filteredMovies.length} 部
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      className="border border-[#17231f] px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-35"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    >
+                      上一页
+                    </button>
+                    {Array.from({ length: totalPages }, (_, index) => index + 1)
+                      .filter((page) => {
+                        if (totalPages <= 7) return true;
+                        return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2;
+                      })
+                      .map((page, index, pages) => {
+                        const previous = pages[index - 1];
+                        return (
+                          <span key={page} className="flex items-center gap-2">
+                            {previous && page - previous > 1 && (
+                              <span className="px-1 text-sm text-[#8a7a66]">...</span>
+                            )}
+                            <button
+                              className={`min-w-10 px-3 py-2 text-sm font-bold ${
+                                page === currentPage
+                                  ? 'bg-[#d6a647] text-[#17231f]'
+                                  : 'border border-[#d9cbbb] bg-white text-[#5f5548] hover:bg-[#efe4d6]'
+                              }`}
+                              onClick={() => setCurrentPage(page)}
+                            >
+                              {page}
+                            </button>
+                          </span>
+                        );
+                      })}
+                    <button
+                      className="border border-[#17231f] px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-35"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    >
+                      下一页
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {filteredMovies.length === 0 && (
+                <div className="border border-dashed border-[#cbbba8] bg-white/60 px-6 py-16 text-center">
+                  <p className="font-serif text-2xl">没有找到匹配影片</p>
+                  <button
+                    className="mt-5 bg-[#17231f] px-5 py-3 text-sm font-semibold text-white"
+                    onClick={() => {
+                      setQuery('');
+                      setActiveTheme('全部');
+                    }}
+                  >
+                    清除筛选
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section id="dive-in" className="bg-[#17231f] px-5 py-16 text-white sm:px-8 lg:py-24">
+          <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            <div>
+              <p className="mb-3 text-xs font-bold tracking-[0.24em] text-[#d6a647]">
+                DIVE IN
+              </p>
+              <h2 className="font-serif text-4xl font-semibold leading-tight sm:text-5xl">
+                观影不是逃离生活，
+                <span className="block">而是练习看见心念</span>
+              </h2>
+              <p className="mt-6 max-w-xl text-base leading-8 text-white/72">
+                你可以一个人静静观看，也可以与同伴分享。重点不是分析电影好坏，而是留意：哪个片段触动了我？我在哪里抗拒？我把谁看成了问题？
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                {
+                  icon: <Compass size={22} />,
+                  title: '选主题',
+                  text: '从当下最强烈的情绪或关系困扰开始，而不是从“必看片单”开始。',
+                },
+                {
+                  icon: <Play size={22} />,
+                  title: '慢下来',
+                  text: '暂停、回放、记录身体反应。被触动的地方通常比剧情更重要。',
+                },
+                {
+                  icon: <MessageCircle size={22} />,
+                  title: '说真话',
+                  text: '分享时使用“我看见我自己……”而不是评价角色和别人。',
+                },
+                {
+                  icon: <Check size={22} />,
+                  title: '带回生活',
+                  text: '把一个观影洞见转成一周内可以实践的小行动。',
+                },
+              ].map((item) => (
+                <div key={item.title} className="border border-white/12 bg-white/7 p-6">
+                  <div className="mb-5 flex h-11 w-11 items-center justify-center bg-[#d6a647] text-[#17231f]">
+                    {item.icon}
+                  </div>
+                  <h3 className="font-serif text-xl font-semibold">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-white/68">{item.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="spotlight" className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
+          <div className="grid gap-8 lg:grid-cols-[1fr_1fr]">
+            <div className="relative min-h-[420px] overflow-hidden">
+              <img
+                className="absolute inset-0 h-full w-full object-cover"
+                src="https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=1400&q=80"
+                alt="电影放映厅"
+              />
+              <div className="absolute inset-0 bg-[#17231f]/35" />
+            </div>
+            <div className="flex flex-col justify-center border border-[#d9cbbb] bg-[#fffaf2] p-8 sm:p-12">
+              <p className="mb-3 text-xs font-bold tracking-[0.24em] text-[#9b6d22]">
+                THE SPOTLIGHT
+              </p>
+              <h2 className="font-serif text-4xl font-semibold leading-tight">
+                周六全天观影工作坊
+              </h2>
+              <p className="mt-5 text-base leading-8 text-[#5f5548]">
+                和同路人一起线上观看一部电影，穿插静默、引导提问与小组分享。适合想把灵性学习落回日常关系、工作与情绪的人。
+              </p>
+              <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                {[
+                  ['形式', '线上共修'],
+                  ['节奏', '观影 + 分享'],
+                  ['适合', '华语学习者'],
+                ].map(([label, value]) => (
+                  <div key={label} className="border-t border-[#d9cbbb] pt-4">
+                    <p className="text-xs font-bold tracking-[0.18em] text-[#8a7a66]">
+                      {label}
+                    </p>
+                    <p className="mt-2 font-serif text-xl">{value}</p>
                   </div>
                 ))}
               </div>
-            )}
-          </section>
-        )}
+              <a
+                id="join"
+                href="mailto:hello@example.com?subject=报名观影工作坊"
+                className="mt-9 inline-flex w-fit items-center gap-3 bg-[#17231f] px-6 py-4 text-sm font-bold text-white hover:bg-[#263a34]"
+              >
+                预约下一场 <CalendarDays size={18} />
+              </a>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* Boundary Note */}
-      <section className="max-w-4xl mx-auto px-6 py-20">
-        <div className="p-10 bg-[#EFE4D0]/60 rounded-[40px] border border-[#DDD4C5]/50 flex flex-col md:flex-row items-center gap-8">
-          <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-[#7FA88B] shrink-0 shadow-sm"><ShieldCheck size={28}/></div>
-          <div className="space-y-2">
-            <h5 className="font-serif text-lg font-bold">温柔提醒</h5>
-            <p className="text-xs text-[#7A7468] leading-relaxed">
-              天赋小院不是心理治疗，也不提供职业诊断。我们相信每个人内在都有自己的光。LIFE 模型通过结构化的回听，旨在陪伴你发现那些被忽视的生命线索。
-            </p>
+      <footer className="border-t border-[#d9cbbb] bg-[#fffaf2] px-5 py-10 sm:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 text-sm text-[#5f5548] md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <Sparkles className="text-[#9b6d22]" size={20} />
+            <span>光影内观：以电影为镜，回到当下的心。</span>
           </div>
-        </div>
-      </section>
-
-      <footer className="py-20 border-t border-[#DDD4C5] text-center bg-white/10">
-        <div className="max-w-xl mx-auto space-y-6 px-6">
-          <p className="text-[10px] text-[#7A7468] tracking-[0.5em] uppercase">天赋小院 · 让生命发声</p>
-          <div className="flex justify-center gap-4 text-[#7FA88B] opacity-50">
-            <Compass size={18} /> <Layout size={18} /> <RefreshCcw size={18} />
+          <div className="flex flex-wrap gap-4">
+            <span className="inline-flex items-center gap-2">
+              <BookOpen size={16} /> 观影笔记
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Heart size={16} /> 同伴分享
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <CircleUserRound size={16} /> 内在练习
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <Star size={16} /> 中文资源
+            </span>
           </div>
-          <p className="text-xs text-[#7A7468] leading-relaxed font-light">
-            本项目深受帕克·帕尔默（Parker J. Palmer）关于 vocation、true self 与 Circle of Trust 等思想启发。<br/>
-            愿你在嘈杂的世界中，降落到真实的生命里。
-          </p>
         </div>
       </footer>
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;700&display=swap');
-        body { font-family: 'Noto Sans SC', sans-serif; background-color: #F7F2E8; overflow-x: hidden; scroll-behavior: smooth; }
-        h1, h2, h3, h4, h5, h6, .font-serif { font-family: 'Noto Serif SC', serif; }
-        .animate-fade-in { animation: fadeIn 1.2s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #F7F2E8; }
-        ::-webkit-scrollbar-thumb { background: #DDD4C5; border-radius: 10px; }
-      `}} />
+      {selectedMovie && (
+        <div className="fixed inset-0 z-[80] overflow-y-auto bg-[#101916]/78 px-4 py-6 backdrop-blur-sm sm:py-10">
+          <div className="mx-auto max-w-4xl border border-[#d9cbbb] bg-[#fffaf2] shadow-2xl">
+            <div className="flex items-start justify-between gap-5 border-b border-[#d9cbbb] p-6 sm:p-8">
+              <div>
+                <p className="text-xs font-bold tracking-[0.24em] text-[#9b6d22]">
+                  观影指南 · 编号 #{selectedMovie.id}
+                </p>
+                <h2 className="mt-3 font-serif text-3xl font-semibold leading-tight sm:text-4xl">
+                  {selectedMovie.titleCn}
+                </h2>
+                <p className="mt-2 text-sm text-[#665d52]">
+                  原名：{selectedMovie.title}
+                  {!selectedMovie.hasVerifiedChineseTitle && ' · 中文名待校对'}
+                </p>
+                {selectedMovie.douban && (
+                  <p className="mt-2 text-xs text-[#8a7a66]">
+                    豆瓣：{selectedMovie.douban.doubanTitle}
+                  </p>
+                )}
+              </div>
+              <button
+                className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#17231f] text-[#17231f] hover:bg-[#17231f] hover:text-white"
+                onClick={() => setSelectedMovie(null)}
+                aria-label="关闭详情"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="space-y-6">
+                <section>
+                  <h3 className="mb-3 font-serif text-xl font-semibold">简介</h3>
+                  <p className="text-sm leading-7 text-[#4d463c]">
+                    {selectedMovie.intro}
+                  </p>
+                  {!selectedMovie.douban && (
+                    <p className="mt-3 text-xs leading-6 text-[#8a7a66]">
+                      这部影片暂未匹配到高置信豆瓣条目，中文名和豆瓣链接需要后续校对。
+                    </p>
+                  )}
+                </section>
+
+                <section>
+                  <h3 className="mb-3 font-serif text-xl font-semibold">主题</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedMovie.themes.map((theme) => (
+                      <button
+                        key={`modal-${theme}`}
+                        className="bg-[#efe4d6] px-3 py-2 text-xs text-[#5f5548] hover:bg-[#d6a647] hover:text-[#17231f]"
+                        onClick={() => {
+                          setActiveTheme(theme);
+                          setSelectedMovie(null);
+                          requestAnimationFrame(() => {
+                            document.getElementById('movies')?.scrollIntoView({ behavior: 'smooth' });
+                          });
+                        }}
+                      >
+                        {translateTheme(theme)}
+                        <span className="ml-1 opacity-60">{theme}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="border-l-4 border-[#d6a647] bg-white p-5">
+                  <h3 className="font-serif text-xl font-semibold">核心提问</h3>
+                  <p className="mt-3 text-sm font-semibold leading-7 text-[#17231f]">
+                    这部电影让我把谁、哪件事或哪种处境看成了问题？如果问题其实是我的知见，我愿意重新看见什么？
+                  </p>
+                </section>
+              </div>
+
+              <div className="space-y-6">
+                <section>
+                  <h3 className="mb-3 font-serif text-xl font-semibold">观影看点</h3>
+                  <ul className="space-y-3">
+                    {selectedMovie.focus.map((item) => (
+                      <li key={item} className="flex gap-3 text-sm leading-7 text-[#4d463c]">
+                        <Check className="mt-1 shrink-0 text-[#9b6d22]" size={16} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="mb-3 font-serif text-xl font-semibold">操练方法</h3>
+                  <ol className="space-y-3">
+                    {selectedMovie.practices.map((item, index) => (
+                      <li key={item} className="grid grid-cols-[32px_minmax(0,1fr)] gap-3 text-sm leading-7 text-[#4d463c]">
+                        <span className="flex h-8 w-8 items-center justify-center bg-[#17231f] text-xs font-bold text-white">
+                          {index + 1}
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+
+                <div className="flex flex-col gap-3 border-t border-[#d9cbbb] pt-5 sm:flex-row">
+                  {selectedMovie.douban && (
+                    <a
+                      className="inline-flex items-center justify-center gap-2 bg-[#17231f] px-5 py-3 text-sm font-bold text-white hover:bg-[#263a34]"
+                      href={selectedMovie.douban.doubanUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      打开豆瓣条目 <ArrowRight size={16} />
+                    </a>
+                  )}
+                  <button
+                    className="inline-flex items-center justify-center gap-2 border border-[#17231f] px-5 py-3 text-sm font-bold text-[#17231f] hover:bg-[#17231f] hover:text-white"
+                    onClick={() => setSelectedMovie(null)}
+                  >
+                    回到列表
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+export default App;
