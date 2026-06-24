@@ -147,6 +147,9 @@ const resolveAssetUrl = (url) => {
   return `${import.meta.env.BASE_URL}${url}`;
 };
 
+const getPosterThumbnailUrl = (url) =>
+  url ? url.replace('/posters/', '/thumbs/') : url;
+
 const knownChineseTitles = {
   '12 Date of Christmas': '十二个圣诞约会',
   '2:22': '2:22',
@@ -328,6 +331,7 @@ const enrichMovie = (movie) => ({
   focus: getMovieFocus(movie),
   practices: getPracticeSteps(movie),
   poster: getMoviePoster(movie),
+  posterThumb: getPosterThumbnailUrl(getMoviePoster(movie)),
   sceneImages: (movieVisualsById.get(movie.id)?.sceneImages || []).map(resolveAssetUrl),
   visualAccent: getVisualAccent(movie),
   sceneClues: getSceneClues(movie),
@@ -383,8 +387,7 @@ const featuredMovies = [
     type: '动画 / 音乐',
     level: '入门',
     themes: ['临在', '真实身份', '执着', '喜悦'],
-    image:
-      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=900&q=80',
+    image: 'movie-images/thumbs/3220-poster.jpg',
     guide:
       '当“人生目标”变成新的枷锁，灵魂会错过当下正在发生的简单喜悦。',
     question: '如果不需要证明这一生有用，我今天会怎样更真实地活着？',
@@ -395,8 +398,7 @@ const featuredMovies = [
     type: '剧情 / 寓言',
     level: '进阶',
     themes: ['觉醒', '控制', '恐惧', '真实身份'],
-    image:
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80',
+    image: 'movie-images/thumbs/3340-poster.jpg',
     guide:
       '熟悉的世界不一定真实。看见剧本，是离开自动反应的第一步。',
     question: '我最害怕走出哪个“被安排好的安全区”？',
@@ -407,8 +409,7 @@ const featuredMovies = [
     type: '科幻 / 关系',
     level: '深潜',
     themes: ['沟通', '时间', '臣服', '悲伤'],
-    image:
-      'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=900&q=80',
+    image: 'movie-images/thumbs/3582-poster.jpg',
     guide:
       '当线性时间松动，爱不再被结果定义，选择也不再只是防御。',
     question: '若我已经知道会失去，我还愿意全然去爱吗？',
@@ -419,8 +420,7 @@ const featuredMovies = [
     type: '家庭 / 日常',
     level: '入门',
     themes: ['家庭', '宽恕', '疗愈', '羞耻'],
-    image:
-      'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80',
+    image: 'movie-images/thumbs/3213-poster.jpg',
     guide:
       '疗愈常常不是激烈的和解，而是在一餐一饭里重新允许彼此存在。',
     question: '我是否仍在替上一代没有说出口的痛苦背负责任？',
@@ -431,8 +431,7 @@ const featuredMovies = [
     type: '传记 / 剧情',
     level: '进阶',
     themes: ['投射', '信任', '关系', '无防御'],
-    image:
-      'https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&w=900&q=80',
+    image: 'movie-images/thumbs/3160-poster.jpg',
     guide:
       '头脑会制造看似完整的故事。温柔地辨认它，而不是与它作战。',
     question: '我正在把哪个内在恐惧投射到他人身上？',
@@ -443,8 +442,7 @@ const featuredMovies = [
     type: '冒险 / 灵性',
     level: '深潜',
     themes: ['信任', '分离感', '奇迹', '恐惧'],
-    image:
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80',
+    image: 'movie-images/thumbs/3529-poster.jpg',
     guide:
       '信仰不是解释苦难，而是在未知中选择不关闭心。',
     question: '我讲述自己的故事时，选择了恐惧版本还是恩典版本？',
@@ -455,8 +453,7 @@ const featuredMovies = [
     type: '爱情 / 科幻',
     level: '进阶',
     themes: ['亲密关系', '孤独', '放下特殊性', '沟通'],
-    image:
-      'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=900&q=80',
+    image: 'movie-images/thumbs/3481-poster.jpg',
     guide:
       '关系中的对象会变化，但真正被邀请看见的是自己的需要与依恋。',
     question: '我爱的是眼前这个人，还是他满足我想象中的空缺？',
@@ -467,8 +464,7 @@ const featuredMovies = [
     type: '动画 / 成长',
     level: '入门',
     themes: ['勇气', '真实身份', '执着', '家庭'],
-    image:
-      'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=900&q=80',
+    image: 'movie-images/thumbs/3418-poster.jpg',
     guide:
       '名字象征记忆与身份。被世界催眠时，记得自己是谁。',
     question: '我为了适应环境，遗忘了自己的哪一个名字？',
@@ -543,7 +539,7 @@ function App() {
             </span>
             <span>
               <span className="block font-serif text-lg font-semibold tracking-wide">
-                光影内观
+                奇迹工坊 · 光影内观
               </span>
               <span className="block text-[11px] tracking-[0.24em] text-white/55">
                 MOVIES FOR AWAKENING
@@ -594,21 +590,21 @@ function App() {
         <section className="relative min-h-[92vh] overflow-hidden">
           <img
             className="absolute inset-0 h-full w-full object-cover"
-            src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=2200&q=80"
+            src={resolveAssetUrl('movie-images/scenes/3145-scene-1.jpg')}
             alt="电影院座椅与银幕"
           />
           <div className="absolute inset-0 bg-[#101916]/70" />
           <div className="relative mx-auto flex min-h-[92vh] max-w-7xl flex-col justify-end px-5 pb-16 pt-32 sm:px-8 lg:pb-24">
             <div className="max-w-4xl">
               <div className="mb-7 inline-flex items-center gap-2 border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold tracking-[0.24em] text-[#f0c86a] backdrop-blur">
-                中文电影觉察资料库
+                电影觉察资料库
               </div>
               <h1 className="font-serif text-5xl font-semibold leading-[1.08] text-white sm:text-6xl lg:text-7xl">
                 借由观影，
                 <span className="block">看见内在正在发生什么</span>
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-white/78">
-                这里为华人观众整理电影、主题与观影提问。你可以按情绪、关系、卡点或心灵果实筛选影片，把每一次观影变成一次温柔而诚实的自我回看。
+                这里整理电影、主题与观影提问。你可以按情绪、关系、卡点或心灵果实筛选影片，把每一次观影变成一次温柔而诚实的自我回看。
               </p>
               <div className="mt-9 flex flex-col gap-4 sm:flex-row">
                 <a
@@ -728,8 +724,9 @@ function App() {
                   >
                     <img
                       className="h-40 w-full object-cover sm:h-full"
-                      src={movie.image}
+                      src={resolveAssetUrl(movie.image)}
                       alt={`${movie.title} 观影意象`}
+                      loading="lazy"
                     />
                     <div className="p-5">
                       <p className="text-xs font-bold tracking-[0.18em] text-[#9b6d22]">
@@ -745,7 +742,7 @@ function App() {
               </div>
 
               <div className="overflow-hidden border border-[#d9cbbb] bg-[#fffaf2]">
-                {pagedMovies.map((movie) => (
+                {pagedMovies.map((movie, index) => (
                   <article
                     key={movie.id}
                     className="grid gap-4 border-b border-[#eadfD1] p-5 last:border-b-0 md:grid-cols-[88px_minmax(0,0.9fr)_minmax(0,1.1fr)] xl:grid-cols-[88px_minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_auto] xl:items-center"
@@ -754,9 +751,13 @@ function App() {
                       {movie.poster ? (
                         <img
                           className="h-full w-full object-cover"
-                          src={movie.poster}
+                          src={movie.posterThumb || movie.poster}
                           alt={`${movie.titleCn} 海报`}
-                          loading="lazy"
+                          width="88"
+                          height="128"
+                          loading={index < 6 ? 'eager' : 'lazy'}
+                          decoding="async"
+                          fetchPriority={index < 6 ? 'high' : 'auto'}
                         />
                       ) : (
                         <div
@@ -779,7 +780,6 @@ function App() {
                       </h3>
                       <p className="mt-1 text-xs text-[#8a7a66]">
                         {movie.title}
-                        {!movie.hasVerifiedChineseTitle && ' · 中文名待校对'}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -931,7 +931,7 @@ function App() {
             <div className="relative min-h-[420px] overflow-hidden">
               <img
                 className="absolute inset-0 h-full w-full object-cover"
-                src="https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=1400&q=80"
+                src={resolveAssetUrl('movie-images/scenes/3369-scene-1.jpg')}
                 alt="电影放映厅"
               />
               <div className="absolute inset-0 bg-[#17231f]/35" />
@@ -976,7 +976,7 @@ function App() {
         <div className="mx-auto flex max-w-7xl flex-col gap-6 text-sm text-[#5f5548] md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <Sparkles className="text-[#9b6d22]" size={20} />
-            <span>光影内观：以电影为镜，回到当下的心。</span>
+            <span>奇迹工坊 · 光影内观：以电影为镜，回到当下的心。</span>
           </div>
           <div className="flex flex-wrap gap-4">
             <span className="inline-flex items-center gap-2">
@@ -989,7 +989,7 @@ function App() {
               <CircleUserRound size={16} /> 内在练习
             </span>
             <span className="inline-flex items-center gap-2">
-              <Star size={16} /> 中文资源
+              <Star size={16} /> 精选资源
             </span>
           </div>
         </div>
@@ -1008,7 +1008,6 @@ function App() {
                 </h2>
                 <p className="mt-2 text-sm text-[#665d52]">
                   原名：{selectedMovie.title}
-                  {!selectedMovie.hasVerifiedChineseTitle && ' · 中文名待校对'}
                 </p>
                 {selectedMovie.douban && (
                   <p className="mt-2 text-xs text-[#8a7a66]">
