@@ -142,6 +142,11 @@ const movieVisualsById = new Map(movieVisuals.map((movie) => [movie.id, movie]))
 const normalizeMovieTitle = (title) =>
   title.replace(/^(.+),\s*(The|A|An)$/i, '$2 $1');
 
+const resolveAssetUrl = (url) => {
+  if (!url || /^https?:\/\//.test(url) || url.startsWith('/')) return url;
+  return `${import.meta.env.BASE_URL}${url}`;
+};
+
 const knownChineseTitles = {
   '12 Date of Christmas': '十二个圣诞约会',
   '2:22': '2:22',
@@ -271,11 +276,11 @@ const getPracticeSteps = (movie) => {
 };
 
 const getMoviePoster = (movie) => {
+  const visualInfo = movieVisualsById.get(movie.id);
+  if (visualInfo?.posterUrl) return resolveAssetUrl(visualInfo.posterUrl);
+
   const doubanInfo = doubanInfoById.get(movie.id);
   if (doubanInfo?.doubanCover) return doubanInfo.doubanCover;
-
-  const visualInfo = movieVisualsById.get(movie.id);
-  if (visualInfo?.posterUrl) return visualInfo.posterUrl;
 
   const featured = featuredMovies.find(
     (item) => item.title === getChineseTitle(movie) || item.title === normalizeMovieTitle(movie.title),
@@ -323,7 +328,7 @@ const enrichMovie = (movie) => ({
   focus: getMovieFocus(movie),
   practices: getPracticeSteps(movie),
   poster: getMoviePoster(movie),
-  sceneImages: movieVisualsById.get(movie.id)?.sceneImages || [],
+  sceneImages: (movieVisualsById.get(movie.id)?.sceneImages || []).map(resolveAssetUrl),
   visualAccent: getVisualAccent(movie),
   sceneClues: getSceneClues(movie),
   hasVerifiedChineseTitle: Boolean(
